@@ -6,7 +6,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -22,7 +21,6 @@ import androidx.fragment.app.FragmentManager;
 import androidx.viewpager.widget.ViewPager;
 
 import com.example.digitacioncaja.Adaptador.PagerAdapater;
-import com.google.android.material.tabs.TabItem;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.textfield.TextInputEditText;
 
@@ -31,8 +29,9 @@ import java.util.HashMap;
 public class DigitacionActivity extends AppCompatActivity  implements View.OnClickListener {
     private TabLayout tabLayout;
     private ViewPager viewPager;
-    private Spinner spinnerOrigen,spinnerDestino;
+    private Spinner spinnerOrigen,spinnerDestino,spinnerTipo;
     private HashMap<Integer,String> mapPoblados = new HashMap<Integer, String>();
+    private HashMap<Integer,String> mapTiposPaquete = new HashMap<Integer, String>();
     private PagerAdapater pagerAdapter;
     private DBHelper dbHelper;
     int poblado_default;
@@ -89,6 +88,7 @@ public class DigitacionActivity extends AppCompatActivity  implements View.OnCli
         viewPager = findViewById(R.id.viewPager);
         spinnerOrigen = findViewById(R.id.spinnerOrigen);
         spinnerDestino = findViewById(R.id.spinnerDestino);
+        spinnerTipo = findViewById(R.id.spinnerTipoPaquete);
         ((Button)findViewById(R.id.btnGuardar)).setOnClickListener(this);
 
         pagerAdapter = new PagerAdapater(getSupportFragmentManager(),tabLayout.getTabCount());
@@ -113,38 +113,53 @@ public class DigitacionActivity extends AppCompatActivity  implements View.OnCli
         });
         viewPager.addOnPageChangeListener(new TabLayout.TabLayoutOnPageChangeListener(tabLayout));
 
-        llenarPoblados();
+        llenarSpinner();
     }
 
-    private void llenarPoblados(){
+    private void llenarSpinner(){
         Cursor data = dbHelper.getPoblados();
+        //Cursor paquetes = dbHelper.getTipoPaquetes();
 
-        String[] spinnerArray = new String[data.getCount()+1];
-        String[] spinnerArray2 = new String[data.getCount()+1];
-        spinnerArray[0] = "Selecionar Origen";
-        spinnerArray2[0] = "Selecionar Destino";
+        String[] arrayOrigenes = new String[data.getCount()+1];
+        String[] arrayDestinos = new String[data.getCount()+1];
+        //String[] arrayTipoPaquete = new String[paquetes.getCount()+1];
+        String[] arrayTipoPaquete = new String[3];
+        arrayOrigenes[0] = "Seleccione el Origen";
+        arrayDestinos[0] = "Seleccione el Destino";
+        arrayTipoPaquete[0] ="Seleccione el Tipo";
 
         int indice = 1;
         while(data.moveToNext()){
             mapPoblados.put(indice,data.getString(0));
-            spinnerArray[indice] = data.getString(2);
-            /*try {
-                spinnerArray[indice] = data.getString(1);
-            }catch (Exception e){
-                spinnerArray[indice] = "No se cargo correctamente";
-            }*/
+            arrayOrigenes[indice] = data.getString(2);
             indice++;
         }
 
-        ArrayAdapter<String> adapter =new ArrayAdapter<String>(this,android.R.layout.simple_spinner_item, spinnerArray);
+        mapTiposPaquete.put(1,"0001");
+        arrayTipoPaquete[1] = "Paquete";
+
+        mapTiposPaquete.put(2,"0002");
+        arrayTipoPaquete[2] = "Caja";
+        /*indice = 1;
+        while (paquetes.moveToNext()){
+            mapTiposPaquete.put(indice,paquetes.getString(0));
+            arrayTipoPaquete[indice] = paquetes.getString(1);
+            indice++;
+        }*/
+
+        ArrayAdapter<String> adapter =new ArrayAdapter<String>(this,android.R.layout.simple_spinner_item, arrayOrigenes);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerOrigen.setAdapter(adapter);
         spinnerOrigen.setSelection(poblado_default);
 
-        System.arraycopy(spinnerArray,0,spinnerArray2,0,spinnerArray.length);
-        ArrayAdapter<String> adapter2 =new ArrayAdapter<String>(this,android.R.layout.simple_spinner_item, spinnerArray2);
+        System.arraycopy(arrayOrigenes,0,arrayDestinos,0,arrayOrigenes.length);
+        ArrayAdapter<String> adapter2 =new ArrayAdapter<String>(this,android.R.layout.simple_spinner_item, arrayDestinos);
         adapter2.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerDestino.setAdapter(adapter2);
+
+        ArrayAdapter<String> adapterTipos = new ArrayAdapter<>(this,android.R.layout.simple_spinner_item,arrayTipoPaquete);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerTipo.setAdapter(adapterTipos);
 
         mensajeOrigen(spinnerOrigen.getSelectedItem().toString()); //Le indicamos que poblado tiene por default
     }
@@ -170,7 +185,8 @@ public class DigitacionActivity extends AppCompatActivity  implements View.OnCli
             ContentValues values = new ContentValues();
             if (!validarCampos(values))
                 return;
-
+            values.put("ReferenciaGuia",getIntent().getExtras().getString("guia"));
+            //dbHelper.InsertarGuia(values);
             Intent intent = new Intent();
             setResult(Activity.RESULT_OK,intent);
             finish();
@@ -184,8 +200,8 @@ public class DigitacionActivity extends AppCompatActivity  implements View.OnCli
             return false;
         }
 
-        String idorigen = mapPoblados.get(spinnerOrigen.getSelectedItemPosition());
-        values.put("idorigen",idorigen);
+        String valor = mapPoblados.get(spinnerOrigen.getSelectedItemPosition());
+        values.put("Origen",valor);
 
         if(spinnerDestino.getSelectedItemPosition() == 0)
         {
@@ -193,8 +209,17 @@ public class DigitacionActivity extends AppCompatActivity  implements View.OnCli
             return false;
         }
 
-        String iddestino = mapPoblados.get(spinnerOrigen.getSelectedItemPosition());
-        values.put("iddestino",iddestino);
+        valor = mapPoblados.get(spinnerOrigen.getSelectedItemPosition());
+        values.put("Destino",valor);
+
+        if(spinnerTipo.getSelectedItemPosition() == 0)
+        {
+            dialogValidacion("Debe seleccionar el tipo de paquete","Tipo paquete");
+            return false;
+        }
+
+         valor = mapTiposPaquete.get(spinnerTipo.getSelectedItemPosition());
+        values.put("TipoServicio",valor);
 
         FragmentManager fragmentManager = getSupportFragmentManager();
 
@@ -207,9 +232,9 @@ public class DigitacionActivity extends AppCompatActivity  implements View.OnCli
         if(direccionRemitente.isEmpty()){dialogValidacion("Debe ingresar la dirección del remitente","Remitente");return false;}
         if(telefonoRemitente.isEmpty()){dialogValidacion("Debe ingresar el teléfono del remitente","Remitente");return false;}
 
-        values.put("nombre_remitente",nombreRemitente);
-        values.put("direccion_remitente",direccionRemitente);
-        values.put("telefono_remitente",telefonoRemitente);
+        values.put("NomRemitente",nombreRemitente);
+        values.put("DirRemitente",direccionRemitente);
+        values.put("TelRemitente",telefonoRemitente);
 
         Fragment fragmentDestinatario = fragmentManager.getFragments().get(1);
         String nombreDestinatario = ((TextInputEditText)fragmentDestinatario.getView().findViewById(R.id.txtNombreDestinatario)).getText().toString();
@@ -220,9 +245,9 @@ public class DigitacionActivity extends AppCompatActivity  implements View.OnCli
         if(direccionDestinatario.isEmpty()){dialogValidacion("Debe ingresar la dirección del destinatario","Destinatario");return false;}
         if(telefonoDestinatario.isEmpty()){dialogValidacion("Debe ingresar el teléfono del destinatario","Destinatario");return false;}
 
-        values.put("nombre_destinatario",nombreDestinatario);
-        values.put("direccion_destinatario",direccionDestinatario);
-        values.put("telefono_destinatario",telefonoDestinatario);
+        values.put("NomDestinatario",nombreDestinatario);
+        values.put("DirDestinatario",direccionDestinatario);
+        values.put("TelDestinatario",telefonoDestinatario);
 
         return true;
     }

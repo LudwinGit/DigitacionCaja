@@ -31,9 +31,12 @@ public class MainActivity extends AppCompatActivity  implements View.OnClickList
         setContentView(R.layout.activity_main);
         ((Button) findViewById(R.id.btnDigitacion)).setOnClickListener(this);
 
+
+        //dbHelper = new DBHelper(this);
+        //Log.d("TAG", dbHelper.InsertarPaquete("001","Paquete"));
+        //dbHelper.InsertarPaquete("002","Caja");
         /*Cargar los poblados a la base local*/
-        /*dbHelper = new DBHelper(this);
-        CargarPoblados();*/
+        /*CargarPoblados();*/
     }
 
     private void CargarPoblados(){
