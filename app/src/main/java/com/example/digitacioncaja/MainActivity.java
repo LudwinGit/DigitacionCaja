@@ -30,6 +30,8 @@ public class MainActivity extends AppCompatActivity  implements View.OnClickList
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ((Button) findViewById(R.id.btnDigitacion)).setOnClickListener(this);
+
+        /*Cargar los poblados a la base local*/
         /*dbHelper = new DBHelper(this);
         CargarPoblados();*/
     }
@@ -46,7 +48,8 @@ public class MainActivity extends AppCompatActivity  implements View.OnClickList
             Intent intent = new Intent(this,DigitacionActivity.class);
             intent.putExtra("guia","WSA782245U");
             intent.putExtra("codclientecredito","CREDITO CODIGO");
-            intent.putExtra("pobladoorigin",5);
+            intent.putExtra("pobladoor" +
+                    "igin",5);
             this.startActivityForResult(intent,LAUNCH_SECOND_ACTIVITY);
         }
     }

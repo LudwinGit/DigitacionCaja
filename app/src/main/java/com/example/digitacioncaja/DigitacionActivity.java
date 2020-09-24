@@ -1,38 +1,38 @@
 package com.example.digitacioncaja;
 
 import android.app.Activity;
-import android.app.Dialog;
+import android.content.ContentValues;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 import androidx.viewpager.widget.ViewPager;
 
 import com.example.digitacioncaja.Adaptador.PagerAdapater;
 import com.google.android.material.tabs.TabItem;
 import com.google.android.material.tabs.TabLayout;
+import com.google.android.material.textfield.TextInputEditText;
 
 import java.util.HashMap;
 
 public class DigitacionActivity extends AppCompatActivity  implements View.OnClickListener {
     private TabLayout tabLayout;
     private ViewPager viewPager;
-    private TabItem tabRemitente;
-    private TabItem tabDestinatario;
     private Spinner spinnerOrigen,spinnerDestino;
     private HashMap<Integer,String> mapPoblados = new HashMap<Integer, String>();
-    private DatosRemitenteFragment datosRemitenteFragment;
     private PagerAdapater pagerAdapter;
     private DBHelper dbHelper;
     int poblado_default;
@@ -83,15 +83,10 @@ public class DigitacionActivity extends AppCompatActivity  implements View.OnCli
         getSupportActionBar().setTitle("Digitación de caja");
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        /*
-         Iniciamos la conexion
-         */
-
+        /*           Iniciamos la conexion        */
         dbHelper = new DBHelper(this);
         tabLayout = findViewById(R.id.tablayout);
         viewPager = findViewById(R.id.viewPager);
-        tabRemitente = findViewById(R.id.tabRemitente);
-        tabDestinatario = findViewById(R.id.tabDestinatario);
         spinnerOrigen = findViewById(R.id.spinnerOrigen);
         spinnerDestino = findViewById(R.id.spinnerDestino);
         ((Button)findViewById(R.id.btnGuardar)).setOnClickListener(this);
@@ -118,7 +113,6 @@ public class DigitacionActivity extends AppCompatActivity  implements View.OnCli
         });
         viewPager.addOnPageChangeListener(new TabLayout.TabLayoutOnPageChangeListener(tabLayout));
 
-        /*Llenar los spinner para los poblados*/
         llenarPoblados();
     }
 
@@ -126,7 +120,9 @@ public class DigitacionActivity extends AppCompatActivity  implements View.OnCli
         Cursor data = dbHelper.getPoblados();
 
         String[] spinnerArray = new String[data.getCount()+1];
+        String[] spinnerArray2 = new String[data.getCount()+1];
         spinnerArray[0] = "Selecionar Origen";
+        spinnerArray2[0] = "Selecionar Destino";
 
         int indice = 1;
         while(data.moveToNext()){
@@ -145,18 +141,12 @@ public class DigitacionActivity extends AppCompatActivity  implements View.OnCli
         spinnerOrigen.setAdapter(adapter);
         spinnerOrigen.setSelection(poblado_default);
 
-
-        mensajeOrigen(spinnerOrigen.getSelectedItem().toString()); //Le indicamos que poblado tiene por default
-
-        String[] spinnerArray2 = new String[data.getCount()+1];
-        HashMap<Integer,String> spinnerMap2 = new HashMap<Integer, String>();
-
         System.arraycopy(spinnerArray,0,spinnerArray2,0,spinnerArray.length);
-        spinnerArray2[0] = "Selecionar Destino";
-
         ArrayAdapter<String> adapter2 =new ArrayAdapter<String>(this,android.R.layout.simple_spinner_item, spinnerArray2);
         adapter2.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerDestino.setAdapter(adapter2);
+
+        mensajeOrigen(spinnerOrigen.getSelectedItem().toString()); //Le indicamos que poblado tiene por default
     }
 
 
@@ -177,44 +167,77 @@ public class DigitacionActivity extends AppCompatActivity  implements View.OnCli
     @Override
     public void onClick(View v) {
         if(v.getId() == R.id.btnGuardar){
-            if(spinnerOrigen.getSelectedItemPosition() == 0)
-            {
-                AlertDialog.Builder builder = new AlertDialog.Builder(this);
-                builder.setMessage("Debe seleccionar el origen");
-                builder.setTitle("Origen");
-                builder.setPositiveButton("Ok", new DialogInterface.OnClickListener(){
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.cancel();
-                    }
-                });
-                AlertDialog dialog = builder.create();
-                dialog.show();
+            ContentValues values = new ContentValues();
+            if (!validarCampos(values))
                 return;
-            }
-
-            if(spinnerDestino.getSelectedItemPosition() == 0)
-            {
-                AlertDialog.Builder builder = new AlertDialog.Builder(this);
-                builder.setMessage("Debe seleccionar el Destino");
-                builder.setTitle("Destino");
-                builder.setPositiveButton("Ok", new DialogInterface.OnClickListener(){
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.cancel();
-                    }
-                });
-                AlertDialog dialog = builder.create();
-                dialog.show();
-                return;
-            }
-
-            String name = spinnerOrigen.getSelectedItem().toString();
-            String id = mapPoblados.get(spinnerOrigen.getSelectedItemPosition());
 
             Intent intent = new Intent();
             setResult(Activity.RESULT_OK,intent);
             finish();
         }
+    }
+
+    private boolean  validarCampos(ContentValues values){
+        if(spinnerOrigen.getSelectedItemPosition() == 0)
+        {
+            dialogValidacion("Debe seleccionar el origen","Origen");
+            return false;
+        }
+
+        String idorigen = mapPoblados.get(spinnerOrigen.getSelectedItemPosition());
+        values.put("idorigen",idorigen);
+
+        if(spinnerDestino.getSelectedItemPosition() == 0)
+        {
+            dialogValidacion("Debe seleccionar el Destino","Destino");
+            return false;
+        }
+
+        String iddestino = mapPoblados.get(spinnerOrigen.getSelectedItemPosition());
+        values.put("iddestino",iddestino);
+
+        FragmentManager fragmentManager = getSupportFragmentManager();
+
+        Fragment fragmentRemitente = fragmentManager.getFragments().get(0);
+        String nombreRemitente = ((TextInputEditText)fragmentRemitente.getView().findViewById(R.id.txtNombreRemitente)).getText().toString();
+        String direccionRemitente = ((TextInputEditText)fragmentRemitente.getView().findViewById(R.id.txtDireccionRemitente)).getText().toString();
+        String telefonoRemitente = ((TextInputEditText)fragmentRemitente.getView().findViewById(R.id.txtTelefonoRemitente)).getText().toString();
+
+        if(nombreRemitente.isEmpty()){dialogValidacion("Debe ingresar el nombre del remitente","Remitente");return false;}
+        if(direccionRemitente.isEmpty()){dialogValidacion("Debe ingresar la dirección del remitente","Remitente");return false;}
+        if(telefonoRemitente.isEmpty()){dialogValidacion("Debe ingresar el teléfono del remitente","Remitente");return false;}
+
+        values.put("nombre_remitente",nombreRemitente);
+        values.put("direccion_remitente",direccionRemitente);
+        values.put("telefono_remitente",telefonoRemitente);
+
+        Fragment fragmentDestinatario = fragmentManager.getFragments().get(1);
+        String nombreDestinatario = ((TextInputEditText)fragmentDestinatario.getView().findViewById(R.id.txtNombreDestinatario)).getText().toString();
+        String direccionDestinatario = ((TextInputEditText)fragmentDestinatario.getView().findViewById(R.id.txtDireccionDestinario)).getText().toString();
+        String telefonoDestinatario = ((TextInputEditText)fragmentDestinatario.getView().findViewById(R.id.txtTelefonoDestinatario)).getText().toString();
+
+        if(nombreDestinatario.isEmpty()){dialogValidacion("Debe ingresar el nombre del destinatario","Destinatario");return false;}
+        if(direccionDestinatario.isEmpty()){dialogValidacion("Debe ingresar la dirección del destinatario","Destinatario");return false;}
+        if(telefonoDestinatario.isEmpty()){dialogValidacion("Debe ingresar el teléfono del destinatario","Destinatario");return false;}
+
+        values.put("nombre_destinatario",nombreDestinatario);
+        values.put("direccion_destinatario",direccionDestinatario);
+        values.put("telefono_destinatario",telefonoDestinatario);
+
+        return true;
+    }
+
+    private  void dialogValidacion(String mensaje,String titulo){
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage(mensaje);
+        builder.setTitle(titulo);
+        builder.setPositiveButton("Ok", new DialogInterface.OnClickListener(){
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+            }
+        });
+        AlertDialog dialog = builder.create();
+        dialog.show();
     }
 }

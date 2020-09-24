@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".DatosRemitenteFragment">
+    >
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
@@ -21,7 +21,7 @@
             app:layout_constraintTop_toBottomOf="@+id/textInputLayout3">
 
             <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/txtTelefono"
+                android:id="@+id/txtTelefonoDestinatario"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="Teléfono"
@@ -51,9 +51,11 @@
             app:layout_constraintTop_toBottomOf="@+id/textInputLayout2">
 
             <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/txtDireccion"
+                android:id="@+id/txtDireccionDestinario"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:inputType="text"
+                android:imeOptions="actionNext"
                 android:hint="Dirección" />
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -93,9 +95,11 @@
             >
 
             <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/txtNombre"
+                android:id="@+id/txtNombreDestinatario"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:imeOptions="actionNext"
+                android:inputType="text"
                 android:hint="Nombre" />
         </com.google.android.material.textfield.TextInputLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
