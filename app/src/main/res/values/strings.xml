@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">DigitacionCaja</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string-array name="tipo_paquete">
+        <item>Paquete</item>
+        <item>Caja</item>
+    </string-array>
+</resources>
